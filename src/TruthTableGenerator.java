@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,16 +30,21 @@ public class TruthTableGenerator {
             JButton generateButton = new JButton("Generate");
             panel.add(generateButton);
 
-            JTextArea resultArea = new JTextArea(10, 40);
-            resultArea.setEditable(false);
-            panel.add(resultArea);
+            String[] columnNames = {VARIABLES[0], VARIABLES[1], VARIABLES[2], "Result"};
+
+            DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+            JTable resultTable = new JTable(tableModel);
+            JScrollPane scrollPane = new JScrollPane(resultTable);
+            panel.add(scrollPane);
+
+            JLabel resultLabel = new JLabel();
+            panel.add(resultLabel);
 
             generateButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     String statement = variable1.getSelectedItem().toString() + operator.getSelectedItem().toString() + variable2.getSelectedItem().toString();
-                    String truthTable = generateTruthTable(statement);
-                    resultArea.setText(truthTable);
+                    generateTruthTable(statement, tableModel, resultLabel);
                 }
             });
 
@@ -49,8 +55,8 @@ public class TruthTableGenerator {
         });
     }
 
-    private static String generateTruthTable(String statement) {
-        StringBuilder truthTable = new StringBuilder("Truth table for statement: " + statement + "\n\n");
+    private static void generateTruthTable(String statement, DefaultTableModel tableModel, JLabel resultLabel) {
+        tableModel.setRowCount(0);
 
         String[] symbols = {statement.substring(0, 1), statement.substring(1, statement.length() - 1), statement.substring(statement.length() - 1)};
         boolean tautology = true;
@@ -60,12 +66,7 @@ public class TruthTableGenerator {
             for (int q = 0; q <= 1; q++) {
                 for (int r = 0; r <= 1; r++) {
                     boolean result = evaluateExpression(symbols, p, q, r);
-
-                    truthTable.append(String.format("%s=%d, %s=%d, %s=%d -> %s=%s\n",
-                            VARIABLES[0], p,
-                            VARIABLES[1], q,
-                            VARIABLES[2], r,
-                            statement, result));
+                    tableModel.addRow(new Object[]{p, q, r, result});
 
                     tautology &= result;
                     contradiction &= !result;
@@ -74,14 +75,12 @@ public class TruthTableGenerator {
         }
 
         if (tautology) {
-            truthTable.append("\nThe statement is a tautology.");
+            resultLabel.setText("The statement is a tautology.");
         } else if (contradiction) {
-            truthTable.append("\nThe statement is a contradiction.");
+            resultLabel.setText("The statement is a contradiction.");
         } else {
-            truthTable.append("\nThe statement is a contingency.");
+            resultLabel.setText("The statement is a contingency.");
         }
-
-        return truthTable.toString();
     }
 
     private static boolean evaluateExpression(String[] symbols, int p, int q, int r) {
