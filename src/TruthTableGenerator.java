@@ -50,7 +50,72 @@ public class TruthTableGenerator {
     }
 
     private static String generateTruthTable(String statement) {
-        // TODO: Implement the logic to generate the truth table and determine if the statement is a tautology, contingency, or contradiction.
-        return "Truth table for statement: " + statement + "\n\nThis feature is not yet fully implemented.";
+        StringBuilder truthTable = new StringBuilder("Truth table for statement: " + statement + "\n\n");
+
+        String[] symbols = {statement.substring(0, 1), statement.substring(1, statement.length() - 1), statement.substring(statement.length() - 1)};
+        boolean tautology = true;
+        boolean contradiction = true;
+
+        for (int p = 0; p <= 1; p++) {
+            for (int q = 0; q <= 1; q++) {
+                for (int r = 0; r <= 1; r++) {
+                    boolean result = evaluateExpression(symbols, p, q, r);
+
+                    truthTable.append(String.format("%s=%d, %s=%d, %s=%d -> %s=%s\n",
+                            VARIABLES[0], p,
+                            VARIABLES[1], q,
+                            VARIABLES[2], r,
+                            statement, result));
+
+                    tautology &= result;
+                    contradiction &= !result;
+                }
+            }
+        }
+
+        if (tautology) {
+            truthTable.append("\nThe statement is a tautology.");
+        } else if (contradiction) {
+            truthTable.append("\nThe statement is a contradiction.");
+        } else {
+            truthTable.append("\nThe statement is a contingency.");
+        }
+
+        return truthTable.toString();
+    }
+
+    private static boolean evaluateExpression(String[] symbols, int p, int q, int r) {
+        boolean[] values = new boolean[]{p == 1, q == 1, r == 1};
+        int index1 = indexOf(VARIABLES, symbols[0]);
+        int index2 = indexOf(VARIABLES, symbols[2]);
+
+        if (index1 == -1 || index2 == -1) {
+            throw new IllegalArgumentException("Invalid variable in statement: " + String.join("", symbols));
+        }
+
+        boolean value1 = values[index1];
+        boolean value2 = values[index2];
+
+        switch (symbols[1]) {
+            case "&":
+                return value1 & value2;
+            case "|":
+                return value1 | value2;
+            case "->":
+                return !value1 | value2;
+            case "<->":
+                return value1 == value2;
+            default:
+                throw new IllegalArgumentException("Invalid operator: " + symbols[1]);
+        }
+    }
+
+    private static int indexOf(String[] array, String value) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(value)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }
