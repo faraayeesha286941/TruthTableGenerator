@@ -27,6 +27,12 @@ public class TruthTableGenerator {
 
             panel.add(inputPanel);
 
+            JPanel variableChoicePanel = new JPanel();
+            variableChoicePanel.add(new JLabel("Choose number of variables:"));
+            JComboBox<Integer> variableChoice = new JComboBox<>(new Integer[]{2, 3});
+            variableChoicePanel.add(variableChoice);
+            panel.add(variableChoicePanel);
+
             JButton generateButton = new JButton("Generate");
             panel.add(generateButton);
 
@@ -44,7 +50,8 @@ public class TruthTableGenerator {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     String statement = variable1.getSelectedItem().toString() + operator.getSelectedItem().toString() + variable2.getSelectedItem().toString();
-                    generateTruthTable(statement, tableModel, resultLabel);
+                    int numVariables = (Integer) variableChoice.getSelectedItem();
+                    generateTruthTable(statement, numVariables, tableModel, resultLabel);
                 }
             });
 
@@ -55,7 +62,7 @@ public class TruthTableGenerator {
         });
     }
 
-    private static void generateTruthTable(String statement, DefaultTableModel tableModel, JLabel resultLabel) {
+    private static void generateTruthTable(String statement, int numVariables, DefaultTableModel tableModel, JLabel resultLabel) {
         tableModel.setRowCount(0);
 
         String[] symbols = {statement.substring(0, 1), statement.substring(1, statement.length() - 1), statement.substring(statement.length() - 1)};
@@ -64,9 +71,13 @@ public class TruthTableGenerator {
 
         for (int p = 0; p <= 1; p++) {
             for (int q = 0; q <= 1; q++) {
-                for (int r = 0; r <= 1; r++) {
+                for (int r = 0; r <= (numVariables == 3 ? 1 : 0); r++) {
                     boolean result = evaluateExpression(symbols, p, q, r);
-                    tableModel.addRow(new Object[]{p, q, r, result});
+                    if (numVariables == 3) {
+                        tableModel.addRow(new Object[]{p, q, r, result});
+                    } else {
+                        tableModel.addRow(new Object[]{p, q, null, result});
+                    }
 
                     tautology &= result;
                     contradiction &= !result;
