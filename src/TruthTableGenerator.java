@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 
 public class TruthTableGenerator {
     private static final String[] VARIABLES = {"P", "Q", "R"};
+    private static final String[] NEGATED_VARIABLES = {"~P", "~Q", "~R"};
     private static final String[] OPERATORS = {"&", "|", "->", "<->"};
 
     public static void main(String[] args) {
@@ -18,9 +19,9 @@ public class TruthTableGenerator {
             panel.add(new JLabel("Enter the statement in infix notation:"));
 
             JPanel inputPanel = new JPanel(new FlowLayout());
-            JComboBox<String> variable1 = new JComboBox<>(VARIABLES);
+            JComboBox<String> variable1 = new JComboBox<>(combineArrays(VARIABLES, NEGATED_VARIABLES));
             JComboBox<String> operator = new JComboBox<>(OPERATORS);
-            JComboBox<String> variable2 = new JComboBox<>(VARIABLES);
+            JComboBox<String> variable2 = new JComboBox<>(combineArrays(VARIABLES, NEGATED_VARIABLES));
             inputPanel.add(variable1);
             inputPanel.add(operator);
             inputPanel.add(variable2);
@@ -62,10 +63,26 @@ public class TruthTableGenerator {
         });
     }
 
+    private static <T> T[] combineArrays(T[]... arrays) {
+        int length = 0;
+        for (T[] array : arrays) {
+            length += array.length;
+        }
+
+        T[] result = (T[]) java.lang.reflect.Array.newInstance(arrays[0].getClass().getComponentType(), length);
+
+        int pos = 0;
+        for (T[] array : arrays) {
+            System.arraycopy(array, 0, result, pos, array.length);
+            pos += array.length;
+        }
+        return result;
+    }
+
     private static void generateTruthTable(String statement, int numVariables, DefaultTableModel tableModel, JLabel resultLabel) {
         tableModel.setRowCount(0);
 
-        String[] symbols = {statement.substring(0, 1), statement.substring(1, statement.length() - 1), statement.substring(statement.length() - 1)};
+        String[] symbols = {statement.substring(0, statement.length() - 2), statement.substring(statement.length() - 2, statement.length() - 1), statement.substring(statement.length() - 1)};
         boolean tautology = true;
         boolean contradiction = true;
 
@@ -96,15 +113,15 @@ public class TruthTableGenerator {
 
     private static boolean evaluateExpression(String[] symbols, int p, int q, int r) {
         boolean[] values = new boolean[]{p == 1, q == 1, r == 1};
-        int index1 = indexOf(VARIABLES, symbols[0]);
-        int index2 = indexOf(VARIABLES, symbols[2]);
+        int index1 = indexOf(VARIABLES, symbols[0].replace("~", ""));
+        int index2 = indexOf(VARIABLES, symbols[2].replace("~", ""));
 
         if (index1 == -1 || index2 == -1) {
             throw new IllegalArgumentException("Invalid variable in statement: " + String.join("", symbols));
         }
 
-        boolean value1 = values[index1];
-        boolean value2 = values[index2];
+        boolean value1 = values[index1] ^ symbols[0].startsWith("~");
+        boolean value2 = values[index2] ^ symbols[2].startsWith("~");
 
         switch (symbols[1]) {
             case "&":
