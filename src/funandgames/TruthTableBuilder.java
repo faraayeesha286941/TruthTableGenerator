@@ -29,6 +29,10 @@ public class TruthTableBuilder {
         JTable table = new JTable();
         JScrollPane scrollPane = new JScrollPane(table);
 
+        JLabel resultLabel = new JLabel("Result: ");
+        JPanel resultPanel = new JPanel(new BorderLayout());
+        resultPanel.add(resultLabel, BorderLayout.SOUTH);
+
         generateButton.addActionListener(e -> {
             String expression = expressionField.getText().replace(" ", "");
             if (!expression.isEmpty()) {
@@ -59,6 +63,8 @@ public class TruthTableBuilder {
                 }
                 model.addColumn("Result");
 
+                List<String> results = new ArrayList<>();
+
                 for (boolean[] row : truthTable) {
                     Object[] rowData = new Object[variableList.size() + subExpressions.size() + 1];
                     int index = 0;
@@ -72,19 +78,39 @@ public class TruthTableBuilder {
                     for (String subExpr : subExpressions) {
                         rowData[index++] = intermediateResultsRow.get(subExpr) ? "1" : "0";
                     }
-                    rowData[index] = result ? "1" : "0";
+                    String resultStr = result ? "1" : "0";
+                    rowData[index] = resultStr;
+                    results.add(resultStr);
                     model.addRow(rowData);
                 }
 
                 table.setModel(model);
+
+                // Determine if the expression is a tautology, contingency, or contradiction
+                String classification = classifyExpression(results);
+                resultLabel.setText("Result: " + classification);
             }
         });
 
         panel.add(inputPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(resultPanel, BorderLayout.SOUTH);
 
         frame.add(panel);
         frame.setVisible(true);
+    }
+
+    private static String classifyExpression(List<String> results) {
+        boolean allTrue = results.stream().allMatch(result -> result.equals("1"));
+        boolean allFalse = results.stream().allMatch(result -> result.equals("0"));
+
+        if (allTrue) {
+            return "Tautology";
+        } else if (allFalse) {
+            return "Contradiction";
+        } else {
+            return "Contingency";
+        }
     }
 
     private static Set<Character> extractVariables(String expression) {
