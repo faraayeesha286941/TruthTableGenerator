@@ -29,9 +29,9 @@ public class TruthTableBuilder {
         JTable table = new JTable();
         JScrollPane scrollPane = new JScrollPane(table);
 
-        JLabel resultLabel = new JLabel("Result: ");
+        JLabel resultLabel = new JLabel("Expression Type: ");
         JPanel resultPanel = new JPanel(new BorderLayout());
-        resultPanel.add(resultLabel, BorderLayout.SOUTH);
+        resultPanel.add(resultLabel, BorderLayout.CENTER);
 
         generateButton.addActionListener(e -> {
             String expression = expressionField.getText().replace(" ", "");
@@ -63,8 +63,7 @@ public class TruthTableBuilder {
                 }
                 model.addColumn("Result");
 
-                List<String> results = new ArrayList<>();
-
+                List<Boolean> results = new ArrayList<>();
                 for (boolean[] row : truthTable) {
                     Object[] rowData = new Object[variableList.size() + subExpressions.size() + 1];
                     int index = 0;
@@ -75,20 +74,16 @@ public class TruthTableBuilder {
                     }
 
                     boolean result = evaluateExpression(expression, variableList, row, intermediateResultsRow);
+                    results.add(result);
                     for (String subExpr : subExpressions) {
                         rowData[index++] = intermediateResultsRow.get(subExpr) ? "1" : "0";
                     }
-                    String resultStr = result ? "1" : "0";
-                    rowData[index] = resultStr;
-                    results.add(resultStr);
+                    rowData[index] = result ? "1" : "0";
                     model.addRow(rowData);
                 }
 
                 table.setModel(model);
-
-                // Determine if the expression is a tautology, contingency, or contradiction
-                String classification = classifyExpression(results);
-                resultLabel.setText("Result: " + classification);
+                resultLabel.setText("Expression Type: " + determineExpressionType(results));
             }
         });
 
@@ -100,9 +95,9 @@ public class TruthTableBuilder {
         frame.setVisible(true);
     }
 
-    private static String classifyExpression(List<String> results) {
-        boolean allTrue = results.stream().allMatch(result -> result.equals("1"));
-        boolean allFalse = results.stream().allMatch(result -> result.equals("0"));
+    private static String determineExpressionType(List<Boolean> results) {
+        boolean allTrue = results.stream().allMatch(b -> b);
+        boolean allFalse = results.stream().noneMatch(b -> b);
 
         if (allTrue) {
             return "Tautology";
