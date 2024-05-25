@@ -1,29 +1,86 @@
 package funandgames;
 
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
-public class ttb {
+public class TruthTableBuilder {
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        SwingUtilities.invokeLater(TruthTableBuilder::createAndShowGUI);
+    }
 
-        System.out.println("Enter the logical expression (use variables A, B, C, ...):");
-        String expression = scanner.nextLine().replace(" ", "");
+    private static void createAndShowGUI() {
+        JFrame frame = new JFrame("Truth Table Builder");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 600);
 
-        Set<Character> variables = extractVariables(expression);
-        int numVariables = variables.size();
-        List<Character> variableList = new ArrayList<>(variables);
+        JPanel panel = new JPanel(new BorderLayout());
 
-        boolean[][] truthTable = generateTruthTable(numVariables);
+        JTextField expressionField = new JTextField();
+        JButton generateButton = new JButton("Generate Truth Table");
 
-        printHeader(variableList, expression);
+        JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.add(new JLabel("Enter logical expression: "), BorderLayout.WEST);
+        inputPanel.add(expressionField, BorderLayout.CENTER);
+        inputPanel.add(generateButton, BorderLayout.EAST);
 
-        for (boolean[] row : truthTable) {
-            printRow(row);
-            Map<String, Boolean> intermediateResults = new HashMap<>();
-            boolean result = evaluateExpression(expression, variableList, row, intermediateResults);
-            printIntermediateResults(intermediateResults, expression);
-            System.out.println(result ? " 1" : " 0");
-        }
+        JTable table = new JTable();
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        generateButton.addActionListener(e -> {
+            String expression = expressionField.getText().replace(" ", "");
+            if (!expression.isEmpty()) {
+                Set<Character> variables = extractVariables(expression);
+                int numVariables = variables.size();
+                List<Character> variableList = new ArrayList<>(variables);
+
+                boolean[][] truthTable = generateTruthTable(numVariables);
+
+                DefaultTableModel model = new DefaultTableModel();
+                for (char variable : variableList) {
+                    model.addColumn(variable);
+                }
+
+                for (char ch : expression.toCharArray()) {
+                    if (!Character.isLetter(ch)) {
+                        model.addColumn(ch);
+                    }
+                }
+                model.addColumn("Result");
+
+                for (boolean[] row : truthTable) {
+                    Object[] rowData = new Object[variableList.size() + expression.length() - numVariables + 1];
+                    int index = 0;
+                    Map<String, Boolean> intermediateResults = new HashMap<>();
+
+                    for (boolean b : row) {
+                        rowData[index++] = b ? "1" : "0";
+                    }
+
+                    boolean result = evaluateExpression(expression, variableList, row, intermediateResults);
+                    for (char ch : expression.toCharArray()) {
+                        if (!Character.isLetter(ch)) {
+                            String key = intermediateResults.keySet().stream().filter(k -> k.contains(Character.toString(ch))).findFirst().orElse(null);
+                            if (key != null) {
+                                rowData[index++] = intermediateResults.get(key) ? "1" : "0";
+                            }
+                        }
+                    }
+                    rowData[index] = result ? "1" : "0";
+                    model.addRow(rowData);
+                }
+
+                table.setModel(model);
+            }
+        });
+
+        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        frame.add(panel);
+        frame.setVisible(true);
     }
 
     private static Set<Character> extractVariables(String expression) {
@@ -47,24 +104,6 @@ public class ttb {
         }
 
         return table;
-    }
-
-    private static void printHeader(List<Character> variableList, String expression) {
-        for (char variable : variableList) {
-            System.out.print(" " + variable + " ");
-        }
-        for (char ch : expression.toCharArray()) {
-            if (!Character.isLetter(ch)) {
-                System.out.print(" " + ch + " ");
-            }
-        }
-        System.out.println(" Result");
-    }
-
-    private static void printRow(boolean[] row) {
-        for (boolean b : row) {
-            System.out.print(b ? " 1 " : " 0 ");
-        }
     }
 
     private static boolean evaluateExpression(String expression, List<Character> variableList, boolean[] row, Map<String, Boolean> intermediateResults) {
@@ -163,16 +202,5 @@ public class ttb {
             }
         }
         return stack.pop();
-    }
-
-    private static void printIntermediateResults(Map<String, Boolean> intermediateResults, String expression) {
-        for (char ch : expression.toCharArray()) {
-            if (!Character.isLetter(ch)) {
-                String key = intermediateResults.keySet().stream().filter(k -> k.contains(Character.toString(ch))).findFirst().orElse(null);
-                if (key != null) {
-                    System.out.print(intermediateResults.get(key) ? " 1 " : " 0 ");
-                }
-            }
-        }
     }
 }
