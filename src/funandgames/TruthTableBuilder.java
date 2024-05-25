@@ -1,6 +1,7 @@
 package funandgames;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.*;
@@ -84,6 +85,13 @@ public class TruthTableBuilder {
 
                 table.setModel(model);
                 resultLabel.setText("Expression Type: " + determineExpressionType(results));
+
+                // Center all table values
+                DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+                centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+                for (int i = 0; i < table.getColumnCount(); i++) {
+                    table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+                }
             }
         });
 
