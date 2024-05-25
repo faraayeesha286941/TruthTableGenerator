@@ -40,33 +40,37 @@ public class TruthTableBuilder {
 
                 DefaultTableModel model = new DefaultTableModel();
                 for (char variable : variableList) {
-                    model.addColumn(variable);
+                    model.addColumn(String.valueOf(variable));
                 }
 
-                for (char ch : expression.toCharArray()) {
-                    if (!Character.isLetter(ch)) {
-                        model.addColumn(ch);
-                    }
+                List<String> subExpressions = new ArrayList<>();
+                Map<String, Boolean> intermediateResults = new HashMap<>();
+
+                for (boolean[] row : truthTable) {
+                    evaluateExpression(expression, variableList, row, intermediateResults);
+                }
+
+                for (String subExpr : intermediateResults.keySet()) {
+                    subExpressions.add(subExpr);
+                }
+
+                for (String subExpr : subExpressions) {
+                    model.addColumn(subExpr);
                 }
                 model.addColumn("Result");
 
                 for (boolean[] row : truthTable) {
-                    Object[] rowData = new Object[variableList.size() + expression.length() - numVariables + 1];
+                    Object[] rowData = new Object[variableList.size() + subExpressions.size() + 1];
                     int index = 0;
-                    Map<String, Boolean> intermediateResults = new HashMap<>();
+                    Map<String, Boolean> intermediateResultsRow = new HashMap<>();
 
                     for (boolean b : row) {
                         rowData[index++] = b ? "1" : "0";
                     }
 
-                    boolean result = evaluateExpression(expression, variableList, row, intermediateResults);
-                    for (char ch : expression.toCharArray()) {
-                        if (!Character.isLetter(ch)) {
-                            String key = intermediateResults.keySet().stream().filter(k -> k.contains(Character.toString(ch))).findFirst().orElse(null);
-                            if (key != null) {
-                                rowData[index++] = intermediateResults.get(key) ? "1" : "0";
-                            }
-                        }
+                    boolean result = evaluateExpression(expression, variableList, row, intermediateResultsRow);
+                    for (String subExpr : subExpressions) {
+                        rowData[index++] = intermediateResultsRow.get(subExpr) ? "1" : "0";
                     }
                     rowData[index] = result ? "1" : "0";
                     model.addRow(rowData);
@@ -154,48 +158,59 @@ public class TruthTableBuilder {
 
     private static boolean evaluateParsedExpression(List<Object> parsedExpression, Map<Character, Boolean> variableValues, Map<String, Boolean> intermediateResults) {
         Stack<Boolean> stack = new Stack<>();
+        Stack<String> subExprStack = new Stack<>();
         for (Object token : parsedExpression) {
             if (token instanceof Character) {
                 char ch = (Character) token;
                 if (Character.isLetter(ch)) {
                     stack.push(variableValues.get(ch));
+                    subExprStack.push(String.valueOf(ch));
                 } else {
                     boolean b1, b2;
-                    String key;
+                    String subExpr1, subExpr2;
                     switch (ch) {
                         case '~':
                             b1 = stack.pop();
+                            subExpr1 = subExprStack.pop();
                             stack.push(!b1);
-                            key = "~" + b1;
-                            intermediateResults.put(key, !b1);
+                            subExprStack.push("~" + subExpr1);
+                            intermediateResults.put("~" + subExpr1, !b1);
                             break;
                         case '&':
                             b1 = stack.pop();
                             b2 = stack.pop();
+                            subExpr1 = subExprStack.pop();
+                            subExpr2 = subExprStack.pop();
                             stack.push(b1 && b2);
-                            key = b2 + "&" + b1;
-                            intermediateResults.put(key, b1 && b2);
+                            subExprStack.push(subExpr2 + "&" + subExpr1);
+                            intermediateResults.put(subExpr2 + "&" + subExpr1, b1 && b2);
                             break;
                         case '|':
                             b1 = stack.pop();
                             b2 = stack.pop();
+                            subExpr1 = subExprStack.pop();
+                            subExpr2 = subExprStack.pop();
                             stack.push(b1 || b2);
-                            key = b2 + "|" + b1;
-                            intermediateResults.put(key, b1 || b2);
+                            subExprStack.push(subExpr2 + "|" + subExpr1);
+                            intermediateResults.put(subExpr2 + "|" + subExpr1, b1 || b2);
                             break;
                         case '>':
                             b1 = stack.pop();
                             b2 = stack.pop();
+                            subExpr1 = subExprStack.pop();
+                            subExpr2 = subExprStack.pop();
                             stack.push(!b2 || b1);
-                            key = b2 + ">" + b1;
-                            intermediateResults.put(key, !b2 || b1);
+                            subExprStack.push(subExpr2 + ">" + subExpr1);
+                            intermediateResults.put(subExpr2 + ">" + subExpr1, !b2 || b1);
                             break;
                         case '=':
                             b1 = stack.pop();
                             b2 = stack.pop();
+                            subExpr1 = subExprStack.pop();
+                            subExpr2 = subExprStack.pop();
                             stack.push(b1 == b2);
-                            key = b2 + "=" + b1;
-                            intermediateResults.put(key, b1 == b2);
+                            subExprStack.push(subExpr2 + "=" + subExpr1);
+                            intermediateResults.put(subExpr2 + "=" + subExpr1, b1 == b2);
                             break;
                     }
                 }
